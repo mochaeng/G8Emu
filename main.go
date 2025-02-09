@@ -47,8 +47,7 @@ type Chip8 struct {
 	keypad    [16]uint8
 	video     [64 * 32]uint32
 
-	rng      *rand.Rand
-	randByte uint8
+	rng *rand.Rand
 }
 
 func NewChip8() *Chip8 {
@@ -56,9 +55,8 @@ func NewChip8() *Chip8 {
 	rng := rand.New(source)
 
 	chip8 := Chip8{
-		pc:       START_ADDRESS,
-		rng:      rng,
-		randByte: uint8(rng.Intn(256)),
+		pc:  START_ADDRESS,
+		rng: rng,
 	}
 
 	for i := 0; i < FONTSET_SIZE; i++ {
@@ -66,6 +64,10 @@ func NewChip8() *Chip8 {
 	}
 
 	return &chip8
+}
+
+func (c8 *Chip8) randByte() uint8 {
+	return uint8(c8.rng.Intn(256))
 }
 
 // Clears the screen
@@ -176,7 +178,7 @@ func (c8 *Chip8) OrRegisters() {
 // Performs a bitwise AND between register Vx and Vy
 //
 // (8XY2): AND Vx, Vy
-func (c8 *Chip8) AndRegisters() {
+func (c8 *Chip8) AND() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	vy := (c8.opcode & 0x00F0) >> 4
 	c8.registers[vx] &= uint8(vy)
@@ -253,10 +255,48 @@ func (c8 *Chip8) SUBN() {
 
 // [8XYE] = SHL Vx
 //
-// Set Vx = Vx SHL 1
+// Set Vx = Vx SHL 1. If the most significant bit of Vx is 1, then VF
+// is set to 1, otherwise to 0. Then Vx is multiplied by 2
 func (c8 *Chip8) SHL() {
 	vx := (c8.opcode & 0x0F00) >> 8
+	c8.registers[0xF] = uint8((c8.opcode & 0x80) >> 7)
+	c8.registers[vx] <<= 1
+}
 
+// [9XY0] = SNE Vx, Vy
+//
+// Skip the next instruction if Vx != Vy
+func (c8 *Chip8) SNE() {
+	vx := (c8.opcode & 0x0F00) >> 8
+	vy := (c8.opcode & 0x00F0) >> 4
+	if c8.registers[vx] != c8.registers[vy] {
+		c8.pc += 2
+	}
+}
+
+// [ANNN] = LD I, addr
+//
+// Set I = NNN. The value of register I is set to NNN
+func (c8 *Chip8) LD_I() {
+	addr := c8.opcode & 0x0FFF
+	c8.index = addr
+}
+
+// [BNNN] = JP V0, addr
+//
+// Jump to location NNN + V0. The PC is set to NNN + V0
+func (c8 *Chip8) JP_V0() {
+	addr := c8.opcode & 0x0FFF
+	c8.pc = addr + uint16(c8.registers[0])
+}
+
+// [CXNN] = RND Vx, byte
+//
+// Set Vx = random byte AND NN. Generates a random number from 0 to 255
+func (c8 *Chip8) RND() {
+	vx := (c8.opcode & 0x0F00) >> 8
+	byte := c8.opcode & 0x00FF
+	c8.registers[vx] = c8.randByte() & uint8(byte)
 }
 
 func (c8 *Chip8) LoadRom(filename string) error {
