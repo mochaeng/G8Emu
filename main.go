@@ -47,7 +47,7 @@ type Chip8 struct {
 	keypad    [16]uint8
 	video     [64 * 32]uint32
 
-	randGen  *rand.Rand
+	rng      *rand.Rand
 	randByte uint8
 }
 
@@ -57,7 +57,7 @@ func NewChip8() *Chip8 {
 
 	chip8 := Chip8{
 		pc:       START_ADDRESS,
-		randGen:  rng,
+		rng:      rng,
 		randByte: uint8(rng.Intn(256)),
 	}
 
@@ -68,26 +68,198 @@ func NewChip8() *Chip8 {
 	return &chip8
 }
 
-// Clears the screen (OP-00E0)
-func (chip8 *Chip8) ClearDisplay() {
-	for i := 0; i < len(chip8.video); i++ {
-		chip8.video[i] = 0
+// Clears the screen
+//
+//	(OP-00E0): CLS
+func (c8 *Chip8) ClearDisplay() {
+	for i := 0; i < len(c8.video); i++ {
+		c8.video[i] = 0
 	}
 }
 
-// Return from a subroutine (OP-00EE)
-func (chip8 *Chip8) Return() {
-	chip8.sp--
-	chip8.pc = chip8.stack[chip8.sp]
+// Return from a subroutine
+//
+// (OP-00EE): RET
+func (c8 *Chip8) Return() {
+	c8.sp--
+	c8.pc = c8.stack[c8.sp]
 }
 
-// Jump to location NNN (OP-1NNN)
-func (chip8 *Chip8) Goto() {
-	address := chip8.opcode & 0x0FFF
-	chip8.pc = address
+// Jump to location NNN
+//
+// (OP-1NNN): JP addr
+func (c8 *Chip8) Goto() {
+	c8.pc = c8.opcode & 0x0FFF
 }
 
-func (chip8 *Chip8) LoadRom(filename string) error {
+// [OP-2NNN] = CALL addr
+//
+// Call a subroutine at NNN
+func (c8 *Chip8) CALL() {
+	address := c8.opcode & 0x0FFF
+	c8.stack[c8.sp] = c8.pc
+	c8.sp++
+	c8.pc = address
+}
+
+// Skips the next instruction if the value in register [Vx]
+// is equal to [NN]
+//
+// (OP-3XNN): SE Vx, byte
+func (c8 *Chip8) SkipNextIfEqual() {
+	vx := (c8.opcode & 0x0F00) >> 8
+	byte := c8.opcode & 0x00FF
+	if c8.registers[vx] == uint8(byte) {
+		c8.pc += 2
+	}
+}
+
+// Skips the next instruction if the value in register [Vx]
+// is different of [NN]
+//
+// (OP-4XNN): SNE Vx, byte
+func (c8 *Chip8) SkipNextIfNotEqual() {
+	vx := (c8.opcode & 0x0F00) >> 8
+	byte := c8.opcode & 0x00FF
+	if c8.registers[vx] != uint8(byte) {
+		c8.pc += 2
+	}
+}
+
+// Skips the next instruction if the register [Vx] is equal to [Vy]
+//
+// (5XY0): SE Vx, Vy
+func (c8 *Chip8) SkipNextIfRegistersEqual() {
+	vx := (c8.opcode & 0x0F00) >> 8
+	vy := (c8.opcode & 0x00F0) >> 4
+	if c8.registers[vx] == c8.registers[vy] {
+		c8.pc += 2
+	}
+}
+
+// Set register Vx to NN
+//
+// (6XNN): LD Vx, byte
+func (c8 *Chip8) SetRegister() {
+	vx := (c8.opcode & 0x0F00) >> 8
+	byte := c8.opcode & 0x00FF
+	c8.registers[vx] = uint8(byte)
+}
+
+// Set register Vx to [Vx + NN]
+//
+// (7XNN): ADD Vx, byte
+func (c8 *Chip8) AddToRegister() {
+	vx := (c8.opcode & 0x0F00) >> 8
+	byte := c8.opcode & 0x00FF
+	c8.registers[vx] += uint8(byte)
+}
+
+// Copies the value from register Vy to Vx
+//
+// (8XY0): LD Vx, Vy
+func (c8 *Chip8) CopyRegister() {
+	vx := (c8.opcode & 0x0F00) >> 8
+	vy := (c8.opcode & 0x00F0) >> 4
+	c8.registers[vx] = uint8(vy)
+}
+
+// Performs a bitwise OR between register Vx and Vy
+//
+// (8XY1): OR Vx, Vy
+func (c8 *Chip8) OrRegisters() {
+	vx := (c8.opcode & 0x0F00) >> 8
+	vy := (c8.opcode & 0x00F0) >> 4
+	c8.registers[vx] |= uint8(vy)
+}
+
+// Performs a bitwise AND between register Vx and Vy
+//
+// (8XY2): AND Vx, Vy
+func (c8 *Chip8) AndRegisters() {
+	vx := (c8.opcode & 0x0F00) >> 8
+	vy := (c8.opcode & 0x00F0) >> 4
+	c8.registers[vx] &= uint8(vy)
+}
+
+// Performs a bitwise XOR between register Vx and Vy
+//
+// (8XY3): XOR Vx, Vy
+func (c8 *Chip8) XorRegisters() {
+	vx := (c8.opcode & 0x0F00) >> 8
+	vy := (c8.opcode & 0x00F0) >> 4
+	c8.registers[vx] ^= uint8(vy)
+}
+
+// Sums the two registers Vx and Vy. Also set VF = carry
+//
+// (8XY4): ADD Vx, Vy
+//
+// If the sum is greater than 8 bits (>255), register VF
+// is set to 1. Also, only the 8 bits of the result are kept
+// and stored in Vx
+func (c8 *Chip8) AddRegisters() {
+	vx := (c8.opcode & 0x0F00) >> 8
+	vy := (c8.opcode & 0x00F0) >> 4
+	sum := vx + vy
+	if sum > 255 {
+		c8.registers[0xF] = 1
+	} else {
+		c8.registers[0xF] = 0
+	}
+	c8.registers[vx] = uint8(sum & 0xFF)
+}
+
+// [OP-8XY5]: SUB Vx, Vy
+//
+// Subtracts the two registers Vx and Vy. Also set VF = not borrow
+// If Vx > Vy, then VF is set to 1, otherwise 0
+func (c8 *Chip8) SubRegisters() {
+	vx := (c8.opcode & 0x0F00) >> 8
+	vy := (c8.opcode & 0x00F0) >> 4
+	if c8.registers[vx] > c8.registers[vy] {
+		c8.registers[0xF] = 1
+	} else {
+		c8.registers[0xF] = 0
+	}
+	c8.registers[vx] -= c8.registers[vy]
+}
+
+// [OP-8XY6] = SHR Vx
+//
+// Shifts right a bit from register Vx. If the least-significant
+// bit of Vx is 1, then VF is set to 1, otherwise 0. Then Vx is
+// divided by 2
+func (c8 *Chip8) ShiftRightRegister() {
+	vx := (c8.opcode & 0x0F00) >> 8
+	c8.registers[0xF] = uint8(c8.registers[vx] & 1)
+	c8.registers[vx] >>= 1
+}
+
+// [OP-8XY7] = SUBN Vx, Vy
+//
+// Set Vx = Vy - Vx, set VF = not borrow. If Vy > Vx, then VF is set
+// to 1, otherwise 0.
+func (c8 *Chip8) SUBN() {
+	vx := (c8.opcode & 0x0F00) >> 8
+	vy := (c8.opcode & 0x00F0) >> 4
+	if c8.registers[vx] > c8.registers[vy] {
+		c8.registers[0xF] = 1
+	} else {
+		c8.registers[0xF] = 0
+	}
+	c8.registers[vx] = c8.registers[vy] - c8.registers[vx]
+}
+
+// [8XYE] = SHL Vx
+//
+// Set Vx = Vx SHL 1
+func (c8 *Chip8) SHL() {
+	vx := (c8.opcode & 0x0F00) >> 8
+
+}
+
+func (c8 *Chip8) LoadRom(filename string) error {
 	file, err := os.Open(filename)
 	if err != nil {
 		return fmt.Errorf("failed to open ROM file: %w", err)
@@ -99,12 +271,12 @@ func (chip8 *Chip8) LoadRom(filename string) error {
 		return fmt.Errorf("failed to read ROM file: %w", err)
 	}
 
-	if len(buffer) > len(chip8.memory)-START_ADDRESS {
+	if len(buffer) > len(c8.memory)-START_ADDRESS {
 		return fmt.Errorf("ROM is too large to fit in memory")
 	}
 
 	for i := 0; i < len(buffer); i++ {
-		chip8.memory[START_ADDRESS+i] = buffer[i]
+		c8.memory[START_ADDRESS+i] = buffer[i]
 	}
 
 	return nil
