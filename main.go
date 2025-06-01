@@ -59,7 +59,7 @@ func NewChip8() *Chip8 {
 		rng: rng,
 	}
 
-	for i := 0; i < FONTSET_SIZE; i++ {
+	for i := range FONTSET_SIZE {
 		chip8.memory[FONTSET_START_ADDRESS+i] = fontset[i]
 	}
 
@@ -73,8 +73,8 @@ func (c8 *Chip8) randByte() uint8 {
 // Clears the screen
 //
 //	(OP-00E0): CLS
-func (c8 *Chip8) ClearDisplay() {
-	for i := 0; i < len(c8.video); i++ {
+func (c8 *Chip8) CLS() {
+	for i := range len(c8.video) {
 		c8.video[i] = 0
 	}
 }
@@ -82,7 +82,7 @@ func (c8 *Chip8) ClearDisplay() {
 // Return from a subroutine
 //
 // (OP-00EE): RET
-func (c8 *Chip8) Return() {
+func (c8 *Chip8) RET() {
 	c8.sp--
 	c8.pc = c8.stack[c8.sp]
 }
@@ -90,7 +90,7 @@ func (c8 *Chip8) Return() {
 // Jump to location NNN
 //
 // (OP-1NNN): JP addr
-func (c8 *Chip8) Goto() {
+func (c8 *Chip8) JP() {
 	c8.pc = c8.opcode & 0x0FFF
 }
 
@@ -108,7 +108,7 @@ func (c8 *Chip8) CALL() {
 // is equal to [NN]
 //
 // (OP-3XNN): SE Vx, byte
-func (c8 *Chip8) SkipNextIfEqual() {
+func (c8 *Chip8) SE() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	byte := c8.opcode & 0x00FF
 	if c8.registers[vx] == uint8(byte) {
@@ -120,7 +120,7 @@ func (c8 *Chip8) SkipNextIfEqual() {
 // is different of [NN]
 //
 // (OP-4XNN): SNE Vx, byte
-func (c8 *Chip8) SkipNextIfNotEqual() {
+func (c8 *Chip8) SNE_BYTE() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	byte := c8.opcode & 0x00FF
 	if c8.registers[vx] != uint8(byte) {
@@ -131,7 +131,7 @@ func (c8 *Chip8) SkipNextIfNotEqual() {
 // Skips the next instruction if the register [Vx] is equal to [Vy]
 //
 // (5XY0): SE Vx, Vy
-func (c8 *Chip8) SkipNextIfRegistersEqual() {
+func (c8 *Chip8) SE_REGISTERS() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	vy := (c8.opcode & 0x00F0) >> 4
 	if c8.registers[vx] == c8.registers[vy] {
@@ -142,7 +142,7 @@ func (c8 *Chip8) SkipNextIfRegistersEqual() {
 // Set register Vx to NN
 //
 // (6XNN): LD Vx, byte
-func (c8 *Chip8) SetRegister() {
+func (c8 *Chip8) LD_BYTE() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	byte := c8.opcode & 0x00FF
 	c8.registers[vx] = uint8(byte)
@@ -266,7 +266,7 @@ func (c8 *Chip8) SHL() {
 // [9XY0] = SNE Vx, Vy
 //
 // Skip the next instruction if Vx != Vy
-func (c8 *Chip8) SNE() {
+func (c8 *Chip8) SNE_REGISTERS() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	vy := (c8.opcode & 0x00F0) >> 4
 	if c8.registers[vx] != c8.registers[vy] {
@@ -315,7 +315,7 @@ func (c8 *Chip8) LoadRom(filename string) error {
 		return fmt.Errorf("ROM is too large to fit in memory")
 	}
 
-	for i := 0; i < len(buffer); i++ {
+	for i := range len(buffer) {
 		c8.memory[START_ADDRESS+i] = buffer[i]
 	}
 
