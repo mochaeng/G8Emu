@@ -72,8 +72,8 @@ func (c8 *Chip8) randByte() uint8 {
 
 // Clears the screen
 //
-//	(OP-00E0): CLS
-func (c8 *Chip8) CLS() {
+// [usage]: CLS
+func (c8 *Chip8) Op00E0() {
 	for i := range len(c8.video) {
 		c8.video[i] = 0
 	}
@@ -81,23 +81,23 @@ func (c8 *Chip8) CLS() {
 
 // Return from a subroutine
 //
-// (OP-00EE): RET
-func (c8 *Chip8) RET() {
+// [usage]: RET
+func (c8 *Chip8) Op00EE() {
 	c8.sp--
 	c8.pc = c8.stack[c8.sp]
 }
 
 // Jump to location NNN
 //
-// (OP-1NNN): JP addr
-func (c8 *Chip8) JP() {
+// [usage]: JP addrr
+func (c8 *Chip8) Op1NNN() {
 	c8.pc = c8.opcode & 0x0FFF
 }
 
-// [OP-2NNN] = CALL addr
-//
 // Call a subroutine at NNN
-func (c8 *Chip8) CALL() {
+//
+// [usage]: CALL addrr
+func (c8 *Chip8) Op2NNN() {
 	address := c8.opcode & 0x0FFF
 	c8.stack[c8.sp] = c8.pc
 	c8.sp++
@@ -107,8 +107,8 @@ func (c8 *Chip8) CALL() {
 // Skips the next instruction if the value in register [Vx]
 // is equal to [NN]
 //
-// (OP-3XNN): SE Vx, byte
-func (c8 *Chip8) SE() {
+// [usage]: SE Vx, byte
+func (c8 *Chip8) Op3XNN() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	byte := c8.opcode & 0x00FF
 	if c8.registers[vx] == uint8(byte) {
@@ -119,8 +119,8 @@ func (c8 *Chip8) SE() {
 // Skips the next instruction if the value in register [Vx]
 // is different of [NN]
 //
-// (OP-4XNN): SNE Vx, byte
-func (c8 *Chip8) SNE_BYTE() {
+// [usage]: SNE Vx, byte
+func (c8 *Chip8) Op4XNN() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	byte := c8.opcode & 0x00FF
 	if c8.registers[vx] != uint8(byte) {
@@ -130,8 +130,8 @@ func (c8 *Chip8) SNE_BYTE() {
 
 // Skips the next instruction if the register [Vx] is equal to [Vy]
 //
-// (5XY0): SE Vx, Vy
-func (c8 *Chip8) SE_REGISTERS() {
+// [usage]: SE Vx, Vy
+func (c8 *Chip8) Op5XY0() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	vy := (c8.opcode & 0x00F0) >> 4
 	if c8.registers[vx] == c8.registers[vy] {
@@ -141,8 +141,8 @@ func (c8 *Chip8) SE_REGISTERS() {
 
 // Set register Vx to NN
 //
-// (6XNN): LD Vx, byte
-func (c8 *Chip8) LD_BYTE() {
+// [usage]: LD Vx, byte
+func (c8 *Chip8) Op6XNN() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	byte := c8.opcode & 0x00FF
 	c8.registers[vx] = uint8(byte)
@@ -150,8 +150,8 @@ func (c8 *Chip8) LD_BYTE() {
 
 // Set register Vx to [Vx + NN]
 //
-// (7XNN): ADD Vx, byte
-func (c8 *Chip8) AddToRegister() {
+// [usage]: ADD Vx, byte
+func (c8 *Chip8) Op7XNN() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	byte := c8.opcode & 0x00FF
 	c8.registers[vx] += uint8(byte)
@@ -159,48 +159,48 @@ func (c8 *Chip8) AddToRegister() {
 
 // Copies the value from register Vy to Vx
 //
-// (8XY0): LD Vx, Vy
-func (c8 *Chip8) CopyRegister() {
+// [usage]: LD Vx, Vy
+func (c8 *Chip8) Op8XY0() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	vy := (c8.opcode & 0x00F0) >> 4
-	c8.registers[vx] = uint8(vy)
+	c8.registers[vx] = c8.registers[vy]
 }
 
 // Performs a bitwise OR between register Vx and Vy
 //
-// (8XY1): OR Vx, Vy
-func (c8 *Chip8) OrRegisters() {
+// usage: OR Vx, Vy
+func (c8 *Chip8) Op8XY1() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	vy := (c8.opcode & 0x00F0) >> 4
-	c8.registers[vx] |= uint8(vy)
+	c8.registers[vx] |= c8.registers[vy]
 }
 
 // Performs a bitwise AND between register Vx and Vy
 //
-// (8XY2): AND Vx, Vy
-func (c8 *Chip8) AND() {
+// [usage]: AND Vx, Vy
+func (c8 *Chip8) Op8XY2() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	vy := (c8.opcode & 0x00F0) >> 4
-	c8.registers[vx] &= uint8(vy)
+	c8.registers[vx] &= c8.registers[vy]
 }
 
 // Performs a bitwise XOR between register Vx and Vy
 //
-// (8XY3): XOR Vx, Vy
-func (c8 *Chip8) XorRegisters() {
+// [usage]: XOR Vx, Vy
+func (c8 *Chip8) Op8XY3() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	vy := (c8.opcode & 0x00F0) >> 4
-	c8.registers[vx] ^= uint8(vy)
+	c8.registers[vx] ^= c8.registers[vy]
 }
 
 // Sums the two registers Vx and Vy. Also set VF = carry
 //
-// (8XY4): ADD Vx, Vy
+// [usage]: ADD Vx, Vy
 //
-// If the sum is greater than 8 bits (>255), register VF
+// [details]: If the sum is greater than 8 bits (>255), register VF
 // is set to 1. Also, only the 8 bits of the result are kept
 // and stored in Vx
-func (c8 *Chip8) AddRegisters() {
+func (c8 *Chip8) Op8XY4() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	vy := (c8.opcode & 0x00F0) >> 4
 	sum := vx + vy
@@ -212,11 +212,13 @@ func (c8 *Chip8) AddRegisters() {
 	c8.registers[vx] = uint8(sum & 0xFF)
 }
 
-// [OP-8XY5]: SUB Vx, Vy
+// Subtracts the two registers Vx and Vy.
 //
-// Subtracts the two registers Vx and Vy. Also set VF = not borrow
-// If Vx > Vy, then VF is set to 1, otherwise 0
-func (c8 *Chip8) SubRegisters() {
+// [usage]: SUB Vx, Vy
+//
+// [details]: Also set VF = not borrow If Vx > Vy, then VF is
+// set to 1, otherwise 0
+func (c8 *Chip8) Op8XY5() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	vy := (c8.opcode & 0x00F0) >> 4
 	if c8.registers[vx] > c8.registers[vy] {
@@ -227,22 +229,26 @@ func (c8 *Chip8) SubRegisters() {
 	c8.registers[vx] -= c8.registers[vy]
 }
 
-// [OP-8XY6] = SHR Vx
+// Shifts right a bit from register Vx.
 //
-// Shifts right a bit from register Vx. If the least-significant
+// [usage]: = SHR Vx
+//
+// [details]: If the least-significant
 // bit of Vx is 1, then VF is set to 1, otherwise 0. Then Vx is
 // divided by 2
-func (c8 *Chip8) ShiftRightRegister() {
+func (c8 *Chip8) Op8XY6() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	c8.registers[0xF] = uint8(c8.registers[vx] & 1)
 	c8.registers[vx] >>= 1
 }
 
-// [OP-8XY7] = SUBN Vx, Vy
+// Set Vx = Vy - Vx, set VF = not borrow.
 //
-// Set Vx = Vy - Vx, set VF = not borrow. If Vy > Vx, then VF is set
+// [usage]: SUBN Vx, Vy
+//
+// [details]: If Vy > Vx, then VF is set
 // to 1, otherwise 0.
-func (c8 *Chip8) SUBN() {
+func (c8 *Chip8) Op8XY7() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	vy := (c8.opcode & 0x00F0) >> 4
 	if c8.registers[vx] > c8.registers[vy] {
@@ -253,20 +259,22 @@ func (c8 *Chip8) SUBN() {
 	c8.registers[vx] = c8.registers[vy] - c8.registers[vx]
 }
 
-// [8XYE] = SHL Vx
+// Set Vx = Vx SHL 1
 //
-// Set Vx = Vx SHL 1. If the most significant bit of Vx is 1, then VF
+// [usage]: SHL Vx
+//
+// [details]: If the most significant bit of Vx is 1, then VF
 // is set to 1, otherwise to 0. Then Vx is multiplied by 2
-func (c8 *Chip8) SHL() {
+func (c8 *Chip8) Op8XYE() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	c8.registers[0xF] = uint8((c8.opcode & 0x80) >> 7)
 	c8.registers[vx] <<= 1
 }
 
-// [9XY0] = SNE Vx, Vy
-//
 // Skip the next instruction if Vx != Vy
-func (c8 *Chip8) SNE_REGISTERS() {
+//
+// [usage]: SNE Vx, Vy
+func (c8 *Chip8) Op9XY0() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	vy := (c8.opcode & 0x00F0) >> 4
 	if c8.registers[vx] != c8.registers[vy] {
@@ -274,26 +282,26 @@ func (c8 *Chip8) SNE_REGISTERS() {
 	}
 }
 
-// [ANNN] = LD I, addr
-//
 // Set I = NNN. The value of register I is set to NNN
-func (c8 *Chip8) LD_I() {
+//
+// [usage]: LD I, addr
+func (c8 *Chip8) OpANNN() {
 	addr := c8.opcode & 0x0FFF
 	c8.index = addr
 }
 
-// [BNNN] = JP V0, addr
-//
 // Jump to location NNN + V0. The PC is set to NNN + V0
-func (c8 *Chip8) JP_V0() {
+//
+// [usage]: JP V0, addr
+func (c8 *Chip8) OpBNNN() {
 	addr := c8.opcode & 0x0FFF
 	c8.pc = addr + uint16(c8.registers[0])
 }
 
-// [CXNN] = RND Vx, byte
-//
 // Set Vx = random byte AND NN. Generates a random number from 0 to 255
-func (c8 *Chip8) RND() {
+//
+// [usage]: RND Vx, byte
+func (c8 *Chip8) OpCXNN() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	byte := c8.opcode & 0x00FF
 	c8.registers[vx] = c8.randByte() & uint8(byte)
