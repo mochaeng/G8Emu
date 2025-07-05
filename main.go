@@ -12,6 +12,9 @@ const (
 
 	FONTSET_SIZE          = 80
 	FONTSET_START_ADDRESS = 0x50
+
+	VIDEO_WIDTH  = 64
+	VIDEO_HEIGHT = 32
 )
 
 var fontset = [FONTSET_SIZE]uint8{
@@ -45,7 +48,7 @@ type Chip8 struct {
 	memory    [4096]uint8
 	stack     [16]uint16
 	keypad    [16]uint8
-	video     [64 * 32]uint32
+	video     [VIDEO_WIDTH * VIDEO_HEIGHT]bool
 
 	rng *rand.Rand
 }
@@ -305,6 +308,48 @@ func (c8 *Chip8) OpCXNN() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	byte := c8.opcode & 0x00FF
 	c8.registers[vx] = c8.randByte() & uint8(byte)
+}
+
+// Display n-byte sprite starting at memory location I at (Vx, Vy),
+// set VF = collision
+func (c8 *Chip8) OpDXYN() {
+	vx := (c8.opcode & 0x0F00) >> 8
+	vy := (c8.opcode & 0x00F0) >> 4
+
+	x := c8.registers[vx] % VIDEO_WIDTH
+	y := c8.registers[vy] % VIDEO_HEIGHT
+	c8.registers[0xF] = 0
+
+	n := c8.opcode & 0x000F
+	for range n {
+		spriteRow := c8.memory[c8.index+n]
+
+		var mask uint8
+		for mask = 0x80; mask != 0; mask >>= 1 {
+			currentSpritePixel := spriteRow & mask
+
+			point := y*VIDEO_WIDTH + x
+			currentScreenPixel := c8.video[point]
+			if currentSpritePixel == 1 && currentScreenPixel {
+				c8.video[point] = false
+				c8.registers[0xF] = 1
+			} else if currentSpritePixel == 1 && !currentScreenPixel {
+				c8.video[point] = true
+			}
+
+			if x > VIDEO_WIDTH {
+				break
+			}
+
+			x += 1
+		}
+
+		if y > VIDEO_HEIGHT {
+			break
+		}
+
+		y += 1
+	}
 }
 
 func (c8 *Chip8) LoadRom(filename string) error {
