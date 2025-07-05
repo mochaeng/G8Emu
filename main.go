@@ -150,6 +150,23 @@ func (c8 *Chip8) randByte() uint8 {
 	return uint8(c8.rng.Intn(256))
 }
 
+func (c8 *Chip8) cycle() {
+	c8.opcode = (uint16(c8.memory[c8.pc])<<8 | uint16(c8.memory[c8.pc+1]))
+
+	c8.pc += 2
+
+	firstNibble := (c8.opcode & 0xF000) >> 12
+	c8.table[firstNibble]()
+
+	if c8.delayTimer > 0 {
+		c8.delayTimer--
+	}
+
+	if c8.soundTimer > 0 {
+		c8.soundTimer--
+	}
+}
+
 // NULL operation for invalid opcodes
 func (c8 *Chip8) OpNULL() {}
 
