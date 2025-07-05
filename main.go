@@ -15,6 +15,8 @@ const (
 
 	VIDEO_WIDTH  = 64
 	VIDEO_HEIGHT = 32
+
+	CHAR_FONT_SIZE = 5
 )
 
 var fontset = [FONTSET_SIZE]uint8{
@@ -47,7 +49,7 @@ type Chip8 struct {
 	registers [16]uint8
 	memory    [4096]uint8
 	stack     [16]uint16
-	keypad    [16]uint8
+	keypad    [16]bool
 	video     [VIDEO_WIDTH * VIDEO_HEIGHT]bool
 
 	rng *rand.Rand
@@ -78,7 +80,7 @@ func (c8 *Chip8) randByte() uint8 {
 // [usage]: CLS
 func (c8 *Chip8) Op00E0() {
 	for i := range len(c8.video) {
-		c8.video[i] = 0
+		c8.video[i] = false
 	}
 }
 
@@ -312,6 +314,8 @@ func (c8 *Chip8) OpCXNN() {
 
 // Display n-byte sprite starting at memory location I at (Vx, Vy),
 // set VF = collision
+//
+// [usage]:  DRW Vx, Vy, nibble
 func (c8 *Chip8) OpDXYN() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	vy := (c8.opcode & 0x00F0) >> 4
@@ -321,19 +325,19 @@ func (c8 *Chip8) OpDXYN() {
 	c8.registers[0xF] = 0
 
 	n := c8.opcode & 0x000F
-	for range n {
-		spriteRow := c8.memory[c8.index+n]
+	for row := range n {
+		spriteRow := c8.memory[c8.index+row]
 
 		var mask uint8
 		for mask = 0x80; mask != 0; mask >>= 1 {
-			currentSpritePixel := spriteRow & mask
+			spritePixel := spriteRow & mask
 
 			point := y*VIDEO_WIDTH + x
-			currentScreenPixel := c8.video[point]
-			if currentSpritePixel == 1 && currentScreenPixel {
+			screenPixel := c8.video[point]
+			if spritePixel == 1 && screenPixel {
 				c8.video[point] = false
 				c8.registers[0xF] = 1
-			} else if currentSpritePixel == 1 && !currentScreenPixel {
+			} else if spritePixel == 1 && !screenPixel {
 				c8.video[point] = true
 			}
 
@@ -349,6 +353,127 @@ func (c8 *Chip8) OpDXYN() {
 		}
 
 		y += 1
+	}
+}
+
+// Skip next instruction if key with the value of Vx is pressed
+//
+// [usage]: SKP Vx
+func (c8 *Chip8) OpEX9E() {
+	vx := (c8.opcode & 0x0F00) >> 8
+	key := c8.registers[vx]
+	if c8.keypad[key] {
+		c8.pc += 2
+	}
+}
+
+// Skip next instruction if key with the value of Vx is not pressed
+//
+// [usage]: SKNP Vx
+func (c8 *Chip8) OpEXA1() {
+	vx := (c8.opcode & 0x0F00) >> 8
+	key := c8.registers[vx]
+	if c8.keypad[key] {
+		c8.pc += 2
+	}
+}
+
+// Set Vx = delay timer value
+//
+// [usage]: LD Vx, DT
+func (c8 *Chip8) OpFX07() {
+	vx := (c8.opcode & 0x0F00) >> 8
+	c8.registers[vx] = c8.delayTimer
+}
+
+// Wait for a key press, store the value of the key in Vx
+//
+// [usage]: LD Vx, K
+func (c8 *Chip8) OpFX0A() {
+	vx := (c8.opcode & 0x0F00) >> 8
+
+	if c8.keypad[0] {
+		c8.registers[vx] = 0
+	} else if c8.keypad[1] {
+		c8.registers[vx] = 1
+	} else if c8.keypad[2] {
+		c8.registers[vx] = 2
+	} else if c8.keypad[3] {
+		c8.registers[vx] = 3
+	} else {
+		c8.pc -= 2
+	}
+}
+
+// Set delay timer = Vx.
+//
+// [usage]: LD DT, Vx
+func (c8 *Chip8) OpFX15() {
+	vx := (c8.opcode & 0x0F00) >> 8
+	c8.delayTimer = c8.registers[vx]
+}
+
+// Set sound timer = Vx.
+//
+// [usage]: LD ST, Vx
+func (c8 *Chip8) OpFX18() {
+	vx := (c8.opcode & 0x0F00) >> 8
+	c8.soundTimer = c8.registers[vx]
+}
+
+// Set I = I + Vx.
+//
+// [usage]:  ADD I, Vx
+func (c8 *Chip8) OpFX1E() {
+	vx := (c8.opcode & 0x0F00) >> 8
+	c8.index += uint16(c8.registers[vx])
+}
+
+// Set I = location of sprite for digit Vx
+//
+// [usage]: LD F, Vx
+func (c8 *Chip8) OpFX29() {
+	vx := (c8.opcode & 0x0F00) >> 8
+	digit := c8.registers[vx]
+
+	c8.index = FONTSET_START_ADDRESS + CHAR_FONT_SIZE*uint16(digit)
+}
+
+// Store BCD representation of Vx in memory locations I, I+1, and I+2.
+//
+// [usage]: LD B, Vx
+func (c8 *Chip8) OpFX33() {
+	vx := (c8.opcode & 0x0F00) >> 8
+	value := c8.registers[vx]
+
+	c8.memory[c8.index+2] = value % 10
+	value /= 10
+
+	c8.memory[c8.index+1] = value % 10
+	value /= 10
+
+	c8.memory[c8.index] = value % 10
+}
+
+// Store registers V0 through Vx in memory starting at location I.
+//
+// [usage]: LD [I], Vx
+func (c8 *Chip8) OpFX55() {
+	vx := (c8.opcode & 0x0F00) >> 8
+
+	for i := range vx {
+		c8.memory[c8.index+i] = c8.registers[i]
+	}
+}
+
+// Read registers V0 through Vx from memory starting at location I.
+//
+// [usage]: LD Vx, [I]
+func (c8 *Chip8) OpFX65() {
+	vx := (c8.opcode & 0x0F00) >> 8
+
+	for i := range vx {
+		c8.registers[i] = c8.memory[c8.index+i]
 	}
 }
 
