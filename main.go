@@ -53,6 +53,12 @@ type Chip8 struct {
 	video     [VIDEO_WIDTH * VIDEO_HEIGHT]bool
 
 	rng *rand.Rand
+
+	table  [0xF + 1]func()
+	table0 [0xE + 1]func()
+	table8 [0xE + 1]func()
+	tableE [0xE + 1]func()
+	tableF [0x65 + 1]func()
 }
 
 func NewChip8() *Chip8 {
@@ -68,12 +74,84 @@ func NewChip8() *Chip8 {
 		chip8.memory[FONTSET_START_ADDRESS+i] = fontset[i]
 	}
 
+	chip8.table[0x0] = chip8.Table0
+	chip8.table[0x1] = chip8.Op1NNN
+	chip8.table[0x2] = chip8.Op2NNN
+	chip8.table[0x3] = chip8.Op3XNN
+	chip8.table[0x4] = chip8.Op4XNN
+	chip8.table[0x5] = chip8.Op5XY0
+	chip8.table[0x6] = chip8.Op6XNN
+	chip8.table[0x7] = chip8.Op7XNN
+	chip8.table[0x8] = chip8.Table8
+	chip8.table[0x9] = chip8.Op9XY0
+	chip8.table[0xA] = chip8.OpANNN
+	chip8.table[0xB] = chip8.OpBNNN
+	chip8.table[0xC] = chip8.OpCXNN
+	chip8.table[0xD] = chip8.OpDXYN
+	chip8.table[0xE] = chip8.TableE
+	chip8.table[0xF] = chip8.TableF
+
+	for i := range 0xE {
+		chip8.table0[i] = chip8.OpNULL
+		chip8.table8[i] = chip8.OpNULL
+		chip8.tableE[i] = chip8.OpNULL
+	}
+
+	chip8.table0[0x0] = chip8.Op00E0
+	chip8.table0[0xE] = chip8.Op00EE
+
+	chip8.table8[0x0] = chip8.Op8XY0
+	chip8.table8[0x1] = chip8.Op8XY1
+	chip8.table8[0x2] = chip8.Op8XY2
+	chip8.table8[0x3] = chip8.Op8XY3
+	chip8.table8[0x4] = chip8.Op8XY4
+	chip8.table8[0x5] = chip8.Op8XY5
+	chip8.table8[0x6] = chip8.Op8XY6
+	chip8.table8[0x7] = chip8.Op8XY7
+	chip8.table8[0xE] = chip8.Op8XYE
+
+	chip8.tableE[0x1] = chip8.OpEXA1
+	chip8.tableE[0xE] = chip8.OpEX9E
+
+	for i := range 0x65 {
+		chip8.tableF[i] = chip8.OpNULL
+	}
+
+	chip8.tableF[0x07] = chip8.OpFX07
+	chip8.tableF[0x0A] = chip8.OpFX0A
+	chip8.tableF[0x15] = chip8.OpFX15
+	chip8.tableF[0x18] = chip8.OpFX18
+	chip8.tableF[0x1E] = chip8.OpFX1E
+	chip8.tableF[0x29] = chip8.OpFX29
+	chip8.tableF[0x33] = chip8.OpFX33
+	chip8.tableF[0x55] = chip8.OpFX55
+	chip8.tableF[0x65] = chip8.OpFX65
+
 	return &chip8
+}
+
+func (c8 *Chip8) Table0() {
+	c8.table0[c8.opcode&0x000F]()
+}
+
+func (c8 *Chip8) Table8() {
+	c8.table8[c8.opcode&0x000F]()
+}
+
+func (c8 *Chip8) TableE() {
+	c8.tableE[c8.opcode&0x000F]()
+}
+
+func (c8 *Chip8) TableF() {
+	c8.table[c8.opcode&0x00FF]()
 }
 
 func (c8 *Chip8) randByte() uint8 {
 	return uint8(c8.rng.Intn(256))
 }
+
+// NULL operation for invalid opcodes
+func (c8 *Chip8) OpNULL() {}
 
 // Clears the screen
 //
