@@ -198,6 +198,7 @@ func (c8 *Chip8) Op1NNN() {
 // [usage]: CALL addrr
 func (c8 *Chip8) Op2NNN() {
 	address := c8.opcode & 0x0FFF
+
 	c8.stack[c8.sp] = c8.pc
 	c8.sp++
 	c8.pc = address
@@ -210,6 +211,7 @@ func (c8 *Chip8) Op2NNN() {
 func (c8 *Chip8) Op3XNN() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	byte := c8.opcode & 0x00FF
+
 	if c8.registers[vx] == uint8(byte) {
 		c8.pc += 2
 	}
@@ -222,6 +224,7 @@ func (c8 *Chip8) Op3XNN() {
 func (c8 *Chip8) Op4XNN() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	byte := c8.opcode & 0x00FF
+
 	if c8.registers[vx] != uint8(byte) {
 		c8.pc += 2
 	}
@@ -233,6 +236,7 @@ func (c8 *Chip8) Op4XNN() {
 func (c8 *Chip8) Op5XY0() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	vy := (c8.opcode & 0x00F0) >> 4
+
 	if c8.registers[vx] == c8.registers[vy] {
 		c8.pc += 2
 	}
@@ -244,6 +248,7 @@ func (c8 *Chip8) Op5XY0() {
 func (c8 *Chip8) Op6XNN() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	byte := c8.opcode & 0x00FF
+
 	c8.registers[vx] = uint8(byte)
 }
 
@@ -253,6 +258,7 @@ func (c8 *Chip8) Op6XNN() {
 func (c8 *Chip8) Op7XNN() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	byte := c8.opcode & 0x00FF
+
 	c8.registers[vx] += uint8(byte)
 }
 
@@ -262,6 +268,7 @@ func (c8 *Chip8) Op7XNN() {
 func (c8 *Chip8) Op8XY0() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	vy := (c8.opcode & 0x00F0) >> 4
+
 	c8.registers[vx] = c8.registers[vy]
 }
 
@@ -271,6 +278,7 @@ func (c8 *Chip8) Op8XY0() {
 func (c8 *Chip8) Op8XY1() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	vy := (c8.opcode & 0x00F0) >> 4
+
 	c8.registers[vx] |= c8.registers[vy]
 }
 
@@ -280,6 +288,7 @@ func (c8 *Chip8) Op8XY1() {
 func (c8 *Chip8) Op8XY2() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	vy := (c8.opcode & 0x00F0) >> 4
+
 	c8.registers[vx] &= c8.registers[vy]
 }
 
@@ -289,6 +298,7 @@ func (c8 *Chip8) Op8XY2() {
 func (c8 *Chip8) Op8XY3() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	vy := (c8.opcode & 0x00F0) >> 4
+
 	c8.registers[vx] ^= c8.registers[vy]
 }
 
@@ -302,13 +312,17 @@ func (c8 *Chip8) Op8XY3() {
 func (c8 *Chip8) Op8XY4() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	vy := (c8.opcode & 0x00F0) >> 4
-	sum := vx + vy
-	if sum > 255 {
+
+	sum := uint16(c8.registers[vx]) + uint16(c8.registers[vy])
+
+	if sum > 0xFF {
 		c8.registers[0xF] = 1
 	} else {
 		c8.registers[0xF] = 0
 	}
-	c8.registers[vx] = uint8(sum & 0xFF)
+
+	// c8.registers[vx] = uint8(sum & 0xFF)
+	c8.registers[vx] = uint8(sum)
 }
 
 // Subtracts the two registers Vx and Vy.
@@ -320,11 +334,13 @@ func (c8 *Chip8) Op8XY4() {
 func (c8 *Chip8) Op8XY5() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	vy := (c8.opcode & 0x00F0) >> 4
-	if c8.registers[vx] > c8.registers[vy] {
+
+	if c8.registers[vy] > c8.registers[vx] {
 		c8.registers[0xF] = 1
 	} else {
 		c8.registers[0xF] = 0
 	}
+
 	c8.registers[vx] -= c8.registers[vy]
 }
 
@@ -350,11 +366,13 @@ func (c8 *Chip8) Op8XY6() {
 func (c8 *Chip8) Op8XY7() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	vy := (c8.opcode & 0x00F0) >> 4
+
 	if c8.registers[vx] > c8.registers[vy] {
 		c8.registers[0xF] = 1
 	} else {
 		c8.registers[0xF] = 0
 	}
+
 	c8.registers[vx] = c8.registers[vy] - c8.registers[vx]
 }
 
@@ -376,6 +394,7 @@ func (c8 *Chip8) Op8XYE() {
 func (c8 *Chip8) Op9XY0() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	vy := (c8.opcode & 0x00F0) >> 4
+
 	if c8.registers[vx] != c8.registers[vy] {
 		c8.pc += 2
 	}
@@ -394,7 +413,7 @@ func (c8 *Chip8) OpANNN() {
 // [usage]: JP V0, addr
 func (c8 *Chip8) OpBNNN() {
 	addr := c8.opcode & 0x0FFF
-	c8.pc = addr + uint16(c8.registers[0])
+	c8.pc = uint16(c8.registers[0]) + addr
 }
 
 // Set Vx = random byte AND NN. Generates a random number from 0 to 255
@@ -403,6 +422,7 @@ func (c8 *Chip8) OpBNNN() {
 func (c8 *Chip8) OpCXNN() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	byte := c8.opcode & 0x00FF
+
 	c8.registers[vx] = c8.randByte() & uint8(byte)
 }
 
@@ -432,29 +452,14 @@ func (c8 *Chip8) OpDXYN() {
 			if spritePixel != 0 {
 				if screenPixel {
 					c8.registers[0xF] = 1
+					c8.Video[point] = false
 				}
-				c8.Video[point] = !screenPixel
+				if !screenPixel {
+					c8.Video[point] = true
+				}
+				// c8.Video[point] = !screenPixel
 			}
 		}
-
-		// var mask uint8
-		// for mask = 0x80; mask != 0; mask >>= 1 {
-		// 	spritePixel := spriteRow & mask
-		// 	point := y*constants.VIDEO_WIDTH + x
-		// 	screenPixel := c8.Video[point]
-		// 	if spritePixel == 1 && screenPixel {
-		// 		c8.Video[point] = false
-		// 		c8.registers[0xF] = 1
-		// 	} else if spritePixel == 1 && !screenPixel {
-		// 		c8.Video[point] = true
-		// 	}
-		// 	if x > constants.VIDEO_WIDTH {
-		// 		break
-		// 	}
-		// 	x += 1
-		// if y > constants.VIDEO_HEIGHT {
-		// 	break
-		// }
 	}
 }
 
@@ -464,6 +469,7 @@ func (c8 *Chip8) OpDXYN() {
 func (c8 *Chip8) OpEX9E() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	key := c8.registers[vx]
+
 	if c8.Keypad[key] {
 		c8.pc += 2
 	}
@@ -475,7 +481,8 @@ func (c8 *Chip8) OpEX9E() {
 func (c8 *Chip8) OpEXA1() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	key := c8.registers[vx]
-	if c8.Keypad[key] {
+
+	if !c8.Keypad[key] {
 		c8.pc += 2
 	}
 }
@@ -563,7 +570,7 @@ func (c8 *Chip8) OpFX33() {
 func (c8 *Chip8) OpFX55() {
 	vx := (c8.opcode & 0x0F00) >> 8
 
-	for i := range vx {
+	for i := range vx + 1 {
 		c8.memory[c8.index+i] = c8.registers[i]
 	}
 }
@@ -574,7 +581,7 @@ func (c8 *Chip8) OpFX55() {
 func (c8 *Chip8) OpFX65() {
 	vx := (c8.opcode & 0x0F00) >> 8
 
-	for i := range vx {
+	for i := range vx + 1 {
 		c8.registers[i] = c8.memory[c8.index+i]
 	}
 }
