@@ -2,9 +2,15 @@ package main
 
 import (
 	"fmt"
+	"image/color"
+	"io/ioutil"
+	"log"
 	"math/rand"
 	"os"
+	"strconv"
 	"time"
+
+	"github.com/hajimehoshi/ebiten/v2"
 )
 
 const (
@@ -17,6 +23,8 @@ const (
 	VIDEO_HEIGHT = 32
 
 	CHAR_FONT_SIZE = 5
+
+	SCALE_FACTOR = 10
 )
 
 var fontset = [FONTSET_SIZE]uint8{
@@ -573,28 +581,191 @@ func (c8 *Chip8) OpFX65() {
 }
 
 func (c8 *Chip8) LoadRom(filename string) error {
-	file, err := os.Open(filename)
+	data, err := ioutil.ReadFile(filename)
 	if err != nil {
-		return fmt.Errorf("failed to open ROM file: %w", err)
-	}
-	defer file.Close()
-
-	buffer, err := os.ReadFile(filename)
-	if err != nil {
-		return fmt.Errorf("failed to read ROM file: %w", err)
+		return fmt.Errorf("failed to read ROM file: %v", err)
 	}
 
-	if len(buffer) > len(c8.memory)-START_ADDRESS {
-		return fmt.Errorf("ROM is too large to fit in memory")
+	// file, err := os.Open(filename)
+	// if err != nil {
+	// 	return fmt.Errorf("failed to open ROM file: %w", err)
+	// }
+	// defer file.Close()
+
+	// buffer, err := os.ReadFile(filename)
+	// if err != nil {
+	// 	return fmt.Errorf("failed to read ROM file: %w", err)
+	// }
+
+	if len(data) > len(c8.memory)-START_ADDRESS {
+		return fmt.Errorf("ROM too large to fit in memory: %d bytes (max %d)", len(data), len(c8.memory)-START_ADDRESS)
 	}
 
-	for i := range len(buffer) {
-		c8.memory[START_ADDRESS+i] = buffer[i]
+	copy(c8.memory[START_ADDRESS:], data)
+	// for i := range len(data) {
+	// 	c8.memory[START_ADDRESS+i] = data[i]
+	// }
+
+	return nil
+}
+
+type Platform struct {
+	display    *ebiten.Image
+	keymap     map[ebiten.Key]int
+	videoScale int
+}
+
+func NewPlatform(videoScale int) *Platform {
+	p := &Platform{
+		display:    ebiten.NewImage(VIDEO_WIDTH, VIDEO_HEIGHT),
+		videoScale: videoScale,
+	}
+
+	p.keymap = map[ebiten.Key]int{
+		ebiten.KeyX: 0x0, ebiten.Key1: 0x1, ebiten.Key2: 0x2, ebiten.Key3: 0x3,
+		ebiten.KeyQ: 0x4, ebiten.KeyW: 0x5, ebiten.KeyE: 0x6, ebiten.KeyA: 0x7,
+		ebiten.KeyS: 0x8, ebiten.KeyD: 0x9, ebiten.KeyZ: 0xA, ebiten.KeyC: 0xB,
+		ebiten.Key4: 0xC, ebiten.KeyR: 0xD, ebiten.KeyF: 0xE, ebiten.KeyV: 0xF,
+	}
+
+	return p
+}
+
+func (p *Platform) Update(videoBuffer []bool, keys []bool) error {
+	for key, chipKey := range p.keymap {
+		keys[chipKey] = ebiten.IsKeyPressed(key)
+	}
+
+	if ebiten.IsKeyPressed(ebiten.KeyEscape) {
+		return ebiten.Termination
+	}
+
+	p.display.Clear()
+	for y := 0; y < VIDEO_HEIGHT; y++ {
+		for x := 0; x < VIDEO_WIDTH; x++ {
+			if videoBuffer[y*VIDEO_WIDTH+x] {
+				p.display.Set(x, y, color.White)
+			} else {
+				p.display.Set(x, y, color.Black)
+			}
+		}
 	}
 
 	return nil
 }
 
-func main() {
+func (p *Platform) Draw(screen *ebiten.Image) {
+	op := &ebiten.DrawImageOptions{}
+	op.GeoM.Scale(float64(p.videoScale), float64(p.videoScale))
+	screen.DrawImage(p.display, op)
+}
 
+func (p *Platform) Layout(outsideWidth, outsideHeight int) (int, int) {
+	return VIDEO_WIDTH * p.videoScale, VIDEO_HEIGHT * p.videoScale
+}
+
+func (p *Platform) ProcessInput(keys []bool) bool {
+	for key, chipKey := range p.keymap {
+		keys[chipKey] = ebiten.IsKeyPressed(key)
+	}
+
+	return ebiten.IsKeyPressed(ebiten.KeyEscape)
+}
+
+func (p *Platform) UpdateDisplay(videoBuffer []bool) {
+	p.display.Clear()
+	for y := 0; y < VIDEO_HEIGHT; y++ {
+		for x := 0; x < VIDEO_WIDTH; x++ {
+			if videoBuffer[y*VIDEO_WIDTH+x] {
+				p.display.Set(x, y, color.White)
+			} else {
+				p.display.Set(x, y, color.Black)
+			}
+		}
+	}
+}
+
+type Game struct {
+	platform      *Platform
+	chip8         *Chip8
+	cycleDelay    time.Duration
+	lastCycleTime time.Time
+}
+
+func NewGame(platform *Platform, chip8 *Chip8, cycleDelay int) *Game {
+	return &Game{
+		platform:      platform,
+		chip8:         chip8,
+		cycleDelay:    time.Duration(cycleDelay) * time.Millisecond,
+		lastCycleTime: time.Now(),
+	}
+}
+
+func (g *Game) Update() error {
+	quit := g.platform.ProcessInput(g.chip8.keypad[:])
+	if quit {
+		return ebiten.Termination
+	}
+
+	currentTime := time.Now()
+	dt := currentTime.Sub(g.lastCycleTime)
+	if dt >= g.cycleDelay {
+		g.lastCycleTime = currentTime
+		g.chip8.cycle()
+	}
+
+	return nil
+	// g.chip8.cycle()
+	// return g.platform.Update(g.chip8.video[:], g.chip8.keypad[:])
+}
+
+func (g *Game) Draw(screen *ebiten.Image) {
+	g.platform.UpdateDisplay(g.chip8.video[:])
+	g.platform.Draw(screen)
+}
+
+func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
+	return g.platform.Layout(outsideWidth, outsideHeight)
+}
+
+func main() {
+	if len(os.Args) != 4 {
+		fmt.Fprintf(os.Stderr, "Usage: %s <Scale> <Delay> <ROM>\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "   Scale: Integer scale factor (e.g., 10)\n")
+		fmt.Fprintf(os.Stderr, "   Delay: Milliseconds between cycles (e.g., 1)\n")
+		fmt.Fprintf(os.Stderr, "   ROM: Path to ROM file\n")
+		os.Exit(1)
+	}
+
+	videoScale, err := strconv.Atoi(os.Args[1])
+	if err != nil {
+		log.Fatalf("invalid scale factor: %v", err)
+	}
+
+	cycleDelay, err := strconv.Atoi(os.Args[2])
+	if err != nil {
+		log.Fatalf("invalid cycle delay: %v", err)
+	}
+
+	romFilename := os.Args[3]
+
+	platform := NewPlatform(videoScale)
+	chip8 := NewChip8()
+
+	if err := chip8.LoadRom(romFilename); err != nil {
+		log.Fatalf("failed to load ROM: %v", err)
+	}
+
+	ebiten.SetWindowSize(VIDEO_WIDTH*SCALE_FACTOR, VIDEO_HEIGHT*SCALE_FACTOR)
+	ebiten.SetWindowTitle("G8Emu")
+
+	game := &Game{
+		platform:   platform,
+		chip8:      chip8,
+		cycleDelay: time.Duration(cycleDelay),
+	}
+
+	if err := ebiten.RunGame(game); err != nil {
+		log.Fatal(err)
+	}
 }
