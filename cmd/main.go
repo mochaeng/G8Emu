@@ -34,7 +34,7 @@ func main() {
 
 	romFilename := os.Args[3]
 
-	platform := platform.NewPlatform(videoScale, constants.VIDEO_WIDTH, constants.VIDEO_HEIGHT)
+	platform := platform.NewPlatform(videoScale)
 	chip8 := emulator.NewChip8()
 
 	if err := chip8.LoadRom(romFilename); err != nil {
