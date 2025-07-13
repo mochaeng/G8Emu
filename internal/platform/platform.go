@@ -39,8 +39,8 @@ func (p *Platform) Update(videoBuffer []bool, keys []bool) error {
 	}
 
 	p.display.Clear()
-	for y := 0; y < constants.VIDEO_HEIGHT; y++ {
-		for x := 0; x < constants.VIDEO_WIDTH; x++ {
+	for y := range constants.VIDEO_HEIGHT {
+		for x := range constants.VIDEO_WIDTH {
 			if videoBuffer[y*constants.VIDEO_WIDTH+x] {
 				p.display.Set(x, y, color.White)
 			} else {
@@ -72,8 +72,8 @@ func (p *Platform) ProcessInput(keys []bool) bool {
 
 func (p *Platform) UpdateDisplay(videoBuffer []bool) {
 	p.display.Clear()
-	for y := 0; y < constants.VIDEO_HEIGHT; y++ {
-		for x := 0; x < constants.VIDEO_WIDTH; x++ {
+	for y := range constants.VIDEO_HEIGHT {
+		for x := range constants.VIDEO_WIDTH {
 			if videoBuffer[y*constants.VIDEO_WIDTH+x] {
 				p.display.Set(x, y, color.White)
 			} else {

@@ -335,7 +335,7 @@ func (c8 *Chip8) Op8XY5() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	vy := (c8.opcode & 0x00F0) >> 4
 
-	if c8.registers[vy] > c8.registers[vx] {
+	if c8.registers[vx] > c8.registers[vy] {
 		c8.registers[0xF] = 1
 	} else {
 		c8.registers[0xF] = 0
@@ -367,7 +367,7 @@ func (c8 *Chip8) Op8XY7() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	vy := (c8.opcode & 0x00F0) >> 4
 
-	if c8.registers[vx] > c8.registers[vy] {
+	if c8.registers[vy] > c8.registers[vx] {
 		c8.registers[0xF] = 1
 	} else {
 		c8.registers[0xF] = 0
@@ -384,7 +384,8 @@ func (c8 *Chip8) Op8XY7() {
 // is set to 1, otherwise to 0. Then Vx is multiplied by 2
 func (c8 *Chip8) Op8XYE() {
 	vx := (c8.opcode & 0x0F00) >> 8
-	c8.registers[0xF] = uint8((c8.opcode & 0x80) >> 7)
+	// c8.registers[0xF] = uint8((c8.opcode & 0x80) >> 7)
+	c8.registers[0xF] = (c8.registers[vx] & 0x80) >> 7
 	c8.registers[vx] <<= 1
 }
 
@@ -430,34 +431,87 @@ func (c8 *Chip8) OpCXNN() {
 // set VF = collision
 //
 // [usage]:  DRW Vx, Vy, nibble
+// func (c8 *Chip8) OpDXYN() {
+// 	vx := (c8.opcode & 0x0F00) >> 8
+// 	vy := (c8.opcode & 0x00F0) >> 4
+
+// 	x := c8.registers[vx] % constants.VIDEO_WIDTH
+// 	y := c8.registers[vy] % constants.VIDEO_HEIGHT
+// 	c8.registers[0xF] = 0
+
+// 	n := c8.opcode & 0x000F
+// 	for row := range n {
+// 		spriteRow := c8.memory[c8.index+row]
+
+// 		for col := range 8 {
+// 			spritePixel := spriteRow & (0x80 >> col)
+
+// 			// point := y*constants.VIDEO_WIDTH + x
+// 			point := (y+uint8(row))*constants.VIDEO_WIDTH + (x + uint8(col))
+// 			screenPixel := c8.Video[point]
+
+// 			if spritePixel != 0 {
+// 				if screenPixel {
+// 					c8.registers[0xF] = 1
+// 					c8.Video[point] = false
+// 				}
+// 				if !screenPixel {
+// 					c8.Video[point] = true
+// 				}
+// 				// c8.Video[point] = !screenPixel
+// 			}
+// 		}
+// 	}
+// }
+
+// Fixed OpDXYN - Display n-byte sprite starting at memory location I at (Vx, Vy)
 func (c8 *Chip8) OpDXYN() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	vy := (c8.opcode & 0x00F0) >> 4
 
-	x := c8.registers[vx] % constants.VIDEO_WIDTH
-	y := c8.registers[vy] % constants.VIDEO_HEIGHT
+	x := c8.registers[vx]
+	y := c8.registers[vy]
+	height := c8.opcode & 0x000F
 	c8.registers[0xF] = 0
 
-	n := c8.opcode & 0x000F
-	for row := range n {
+	for row := uint16(0); row < height; row++ {
 		spriteRow := c8.memory[c8.index+row]
 
-		for col := range 8 {
-			spritePixel := spriteRow & (0x80 >> col)
+		// Check if we're going off screen vertically
+		yCoord := y + uint8(row)
+		if yCoord >= constants.VIDEO_HEIGHT {
+			break // Clip vertically - don't draw rows that go off screen
+		}
 
-			// point := y*constants.VIDEO_WIDTH + x
-			point := (y+uint8(row))*constants.VIDEO_WIDTH + (x + uint8(col))
-			screenPixel := c8.Video[point]
+		for col := uint8(0); col < 8; col++ {
+			// Check if we're going off screen horizontally
+			xCoord := x + col
+			if xCoord >= constants.VIDEO_WIDTH {
+				break // Clip horizontally - don't draw pixels that go off screen
+			}
 
-			if spritePixel != 0 {
-				if screenPixel {
-					c8.registers[0xF] = 1
-					c8.Video[point] = false
-				}
-				if !screenPixel {
-					c8.Video[point] = true
-				}
-				// c8.Video[point] = !screenPixel
+			// Get the current bit from the sprite row
+			spritePixel := (spriteRow & (0x80 >> col)) != 0
+
+			// Calculate pixel index
+			pixelIndex := uint16(yCoord)*constants.VIDEO_WIDTH + uint16(xCoord)
+
+			// Safety check (shouldn't be needed with proper clipping, but good practice)
+			if pixelIndex >= constants.VIDEO_WIDTH*constants.VIDEO_HEIGHT {
+				continue
+			}
+
+			// Get current screen state
+			currentPixel := c8.Video[pixelIndex]
+
+			// Check for collision (both pixels are on)
+			if spritePixel && currentPixel {
+				c8.registers[0xF] = 1
+			}
+
+			// XOR the sprite pixel with screen pixel
+			if spritePixel {
+				c8.Video[pixelIndex] = !currentPixel
 			}
 		}
 	}

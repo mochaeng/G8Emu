@@ -40,3 +40,9 @@ Tells us where in the 16-levels of stack our most recent value was placed (top).
 Additional memory buffer used for storing the graphics to display (64x32). Each pixel is either on or off.
 
 The draw instruction iterates over each pixel in a sprite and XORs the sprite pixel with the display pixel.
+
+## Running
+
+```sh
+go run ./cmd 10 1 ROMs/test_opcode.ch8
+```
