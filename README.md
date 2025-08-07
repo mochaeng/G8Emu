@@ -46,3 +46,37 @@ The draw instruction iterates over each pixel in a sprite and XORs the sprite pi
 ```sh
 go run ./cmd 10 1 ROMs/test_opcode.ch8
 ```
+
+## Platform
+
+Handles hardware abstraction and I/O
+
+- display rendering (`*ebiten.Image`) as the buffer
+- scales the native 64x32 to a larger size `videoScale`
+- converts the chip8 boolean video to pixels (white=true,black=false)
+- implements `Draw()`
+
+- maps physical keyboard keys to chip8's hex keypad using `keymap`
+- `ProcessInput()` check keyboard state and updates chip8's keypad array
+
+- handles scre layout/scaling through `Layout()`
+- connection between chip8's internal display and ebitens window system
+
+## Engine
+
+Implements ebiten's game loop and timing control
+
+- uses `cycleDelay` (milliseconds) to control emulation speed
+- tracks `lastCycleTime` to maintain consistent timing
+- only advances chip8 state when delay time is reached
+
+- `Update()` called every frame
+- `Draw()` updates visual output
+- `Layout()` delegates to platform to screen sizing
+
+- bridges between ebiten callbacks and chip8 operations
+- manages communication between platform and chip8 instances
+
+## Zed
+
+GOOS=js GOARCH=wasm zed .
