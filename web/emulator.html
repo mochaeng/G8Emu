@@ -6,22 +6,17 @@
     <style>
       body {
         margin: 0;
+        padding: 0;
         background: #111;
-        display: flex;
-        justify-content: center;
-        align-items: center;
+        width: 100vw;
         height: 100vh;
         overflow: hidden;
       }
-      #canvas {
-        image-rendering: pixelated;
-        max-width: 100%;
-        max-height: 100%;
-      }
+      /* Remove the original canvas since Ebiten creates its own */
     </style>
   </head>
   <body>
-    <canvas id="canvas"></canvas>
+    <!-- Remove the original canvas, let Ebiten create it -->
     <script src="wasm_exec.js"></script>
     <script src="emulator.js"></script>
   </body>
