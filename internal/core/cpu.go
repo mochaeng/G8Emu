@@ -1,6 +1,7 @@
 package core
 
 import (
+	"fmt"
 	"math/rand"
 	"time"
 
@@ -51,6 +52,8 @@ type Chip8 struct {
 
 	rng *rand.Rand
 
+	paused bool
+
 	table  [0xF + 1]func()
 	table0 [0xE + 1]func()
 	table8 [0xE + 1]func()
@@ -70,6 +73,10 @@ func NewChip8() *Chip8 {
 	chip8.loadFontset()
 	chip8.initTables()
 
+	for i := range len(chip8.memory) {
+		chip8.memory[i] = 0x00
+	}
+
 	return &chip8
 }
 
@@ -84,8 +91,10 @@ func (c8 *Chip8) randByte() uint8 {
 }
 
 func (c8 *Chip8) fetch() {
-	c8.opcode = (uint16(c8.memory[c8.pc])<<8 | uint16(c8.memory[c8.pc+1]))
-	c8.pc += 2
+	addr1 := c8.pc & 0xFFF
+	addr2 := (c8.pc + 1) & 0xFFF
+	c8.opcode = (uint16(c8.memory[addr1])<<8 | uint16(c8.memory[addr2]))
+	c8.pc = (c8.pc + 2) & 0xFFF
 }
 
 func (c8 *Chip8) decodeAndExecute() {
@@ -94,7 +103,16 @@ func (c8 *Chip8) decodeAndExecute() {
 }
 
 func (c8 *Chip8) Cycle() {
+	if c8.paused {
+		return
+	}
+
 	c8.fetch()
+
+	if c8.opcode == 0x0000 {
+		return
+	}
+
 	c8.decodeAndExecute()
 
 	// if c8.delayTimer > 0 {
@@ -104,4 +122,19 @@ func (c8 *Chip8) Cycle() {
 	// if c8.soundTimer > 0 {
 	// 	c8.soundTimer--
 	// }
+}
+
+func (c8 *Chip8) memRead(addr uint16) uint8 {
+	return c8.memory[addr%4096]
+}
+
+func (c8 *Chip8) memWrite(addr uint16, value uint8) {
+	c8.memory[addr%4096] = value
+}
+
+func (c8 *Chip8) DumpMemory(start, end uint16) {
+	for i := start; i <= end; i += 2 {
+		opcode := uint16(c8.memory[i])<<8 | uint16(c8.memory[i+1])
+		println(fmt.Sprintf("%04X : %04X", i, opcode))
+	}
 }

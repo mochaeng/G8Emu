@@ -1,23 +1,65 @@
 package main
 
 import (
+	"syscall/js"
+
+	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/mochaeng/G8Emu/internal/core"
 	"github.com/mochaeng/G8Emu/internal/emulator"
-)
-
-var (
-	game     *emulator.Game
-	platform *emulator.Platform
-	chip8    *core.Chip8
 )
 
 func main() {
 	const scale = 10
 	const frequency = 540
 
-	platform = emulator.NewPlatform(scale)
-	chip8 = core.NewChip8()
-	game = emulator.NewGame(platform, chip8, frequency)
+	chip8 := core.NewChip8()
+	platform := emulator.NewPlatform(scale)
+	game := emulator.NewGame(platform, chip8, frequency)
 
-	js
+	loadRom := func(this js.Value, args []js.Value) any {
+		println("what about this one?")
+		if len(args) == 0 || args[0].IsNull() {
+			return js.ValueOf("No ROM data provided")
+		}
+
+		dataLength := args[0].Get("length").Int()
+		romData := make([]byte, dataLength)
+		js.CopyBytesToGo(romData, args[0])
+
+		if err := chip8.LoadRomBytes(romData); err != nil {
+			js.Global().Call("alert", "ROM load error: "+err.Error())
+			return js.ValueOf(err.Error())
+		}
+
+		return nil
+	}
+
+	resetEmulator := func(this js.Value, args []js.Value) any {
+		// chip8.reset()
+		return nil
+	}
+
+	togglePause := func(this js.Value, args []js.Value) any {
+		// game.setPaused
+		return nil
+	}
+
+	setCpuFrequency := func(this js.Value, args []js.Value) any {
+		// freq := args[0].Int()
+		// game.setCpuFrequency(freq)
+		return nil
+	}
+
+	js.Global().Set("loadRom", js.FuncOf(loadRom))
+	js.Global().Set("resetEmulator", js.FuncOf(resetEmulator))
+	js.Global().Set("togglePause", js.FuncOf(togglePause))
+	js.Global().Set("setCpuFrequency", js.FuncOf(setCpuFrequency))
+
+	go func() {
+		if err := ebiten.RunGame(game); err != nil {
+			println("Game error: ", err)
+		}
+	}()
+
+	select {}
 }
