@@ -16,7 +16,6 @@ func main() {
 	if len(os.Args) != 3 {
 		fmt.Fprintf(os.Stderr, "Usage: %s <Scale> <Delay> <ROM>\n", os.Args[0])
 		fmt.Fprintf(os.Stderr, "   Scale: Integer scale factor (e.g., 10)\n")
-		// fmt.Fprintf(os.Stderr, "   Delay: Milliseconds between cycles (e.g., 1)\n")
 		fmt.Fprintf(os.Stderr, "   ROM: Path to ROM file\n")
 		os.Exit(1)
 	}
