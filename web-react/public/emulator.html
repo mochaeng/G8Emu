@@ -1,0 +1,23 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>G8Emu</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        background: #111;
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+      }
+      /* Remove the original canvas since Ebiten creates its own */
+    </style>
+  </head>
+  <body>
+    <!-- Remove the original canvas, let Ebiten create it -->
+    <script src="wasm_exec.js"></script>
+    <script src="emulator.js"></script>
+  </body>
+</html>
