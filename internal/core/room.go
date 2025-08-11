@@ -17,7 +17,6 @@ func (c8 *Chip8) LoadRomFile(filename string) error {
 	// }
 
 	// copy(c8.memory[START_ADDRESS:], data)
-
 }
 
 func (c8 *Chip8) LoadRomBytes(data []byte) error {

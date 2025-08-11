@@ -14,7 +14,7 @@ func main() {
 
 	chip8 := core.NewChip8()
 	platform := emulator.NewPlatform(scale)
-	game := emulator.NewGame(platform, chip8, frequency)
+	engine := emulator.NewGame(platform, chip8, frequency)
 
 	loadRom := func(this js.Value, args []js.Value) any {
 		println("what about this one?")
@@ -35,12 +35,17 @@ func main() {
 	}
 
 	resetEmulator := func(this js.Value, args []js.Value) any {
-		// chip8.reset()
+		println("is this being called?")
+		engine.Reset()
 		return nil
 	}
 
 	togglePause := func(this js.Value, args []js.Value) any {
-		// game.setPaused
+		if engine.IsPaused() {
+			engine.Resume()
+		} else {
+			engine.Pause()
+		}
 		return nil
 	}
 
@@ -56,7 +61,7 @@ func main() {
 	js.Global().Set("setCpuFrequency", js.FuncOf(setCpuFrequency))
 
 	go func() {
-		if err := ebiten.RunGame(game); err != nil {
+		if err := ebiten.RunGame(engine); err != nil {
 			println("Game error: ", err)
 		}
 	}()

@@ -114,14 +114,6 @@ func (c8 *Chip8) Cycle() {
 	}
 
 	c8.decodeAndExecute()
-
-	// if c8.delayTimer > 0 {
-	// 	c8.delayTimer--
-	// }
-
-	// if c8.soundTimer > 0 {
-	// 	c8.soundTimer--
-	// }
 }
 
 func (c8 *Chip8) memRead(addr uint16) uint8 {
@@ -137,4 +129,50 @@ func (c8 *Chip8) DumpMemory(start, end uint16) {
 		opcode := uint16(c8.memory[i])<<8 | uint16(c8.memory[i+1])
 		println(fmt.Sprintf("%04X : %04X", i, opcode))
 	}
+}
+
+func (c8 *Chip8) Reset() {
+	c8.pc = START_ADDRESS
+	c8.sp = 0
+	c8.index = 0
+	c8.DelayTimer = 0
+	c8.SoundTimer = 0
+	c8.opcode = 0
+	c8.paused = false
+	c8.rng = rand.New(rand.NewSource(time.Now().UnixNano()))
+
+	for i := range len(c8.registers) {
+		c8.registers[i] = 0
+	}
+
+	for i := range len(c8.memory) {
+		c8.memory[i] = 0
+	}
+
+	// c8.loadFontset()
+
+	for i := range len(c8.stack) {
+		c8.stack[i] = 0
+	}
+
+	for i := range len(c8.Video) {
+		c8.Video[i] = false
+	}
+
+}
+
+func (c8 *Chip8) Pause() {
+	c8.paused = true
+}
+
+func (c8 *Chip8) Resume() {
+	c8.paused = false
+}
+
+func (c8 *Chip8) TogglePause() {
+	c8.paused = !c8.paused
+}
+
+func (c8 *Chip8) IsPaused() bool {
+	return c8.paused
 }

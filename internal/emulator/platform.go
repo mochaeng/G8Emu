@@ -29,7 +29,6 @@ func NewPlatform(videoScale int) *Platform {
 	return p
 }
 
-// Renders scaled display
 func (p *Platform) Draw(screen *ebiten.Image) {
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Scale(float64(p.videoScale), float64(p.videoScale))
@@ -40,12 +39,10 @@ func (p *Platform) Layout(outsideWidth, outsideHeight int) (int, int) {
 	return constants.VIDEO_WIDTH * p.videoScale, constants.VIDEO_HEIGHT * p.videoScale
 }
 
-func (p *Platform) ProcessInput(keys []bool) bool {
+func (p *Platform) ProcessInput(keys []bool) {
 	for key, chipKey := range p.keymap {
 		keys[chipKey] = ebiten.IsKeyPressed(key)
 	}
-
-	return ebiten.IsKeyPressed(ebiten.KeyEscape)
 }
 
 func (p *Platform) UpdateDisplay(videoBuffer []bool) {

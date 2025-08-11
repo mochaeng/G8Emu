@@ -60,17 +60,18 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white p-4 sm:p-8">
-      <header className="text-center mb-8 pb-6 border-b border-blue-500">
-        <h1 className="text-3xl sm:text-4xl font-bold">G8Emu</h1>
-        <p className="text-gray-400 mt-2">CHIP-8 Web Emulator</p>
+    <div className="min-h-screen bg-[#FBF6E2] text-[#131842] p-4 sm:p-8">
+      <header className="text-center mb-8 pb-6 border-b border-[#131842]/20">
+        <h1 className="text-3xl sm:text-4xl font-bold text-[#131842]">G8Emu</h1>
+        <p className="text-[#131842]/70 mt-2 font-medium">
+          CHIP-8 Web Emulator
+        </p>
       </header>
 
-      <main className="max-w-4xl mx-auto flex flex-col gap-8">
-        <div className="bg-gray-800/50 rounded-xl p-4 shadow-xl">
+      <main className="max-w-7xl mx-auto flex flex-col lg:flex-row  gap-8">
+        <div className="bg-[#ECCEAE] rounded-xl flex-1 p-4 shadow-xl border border-[#131842]/10">
           <Emulator ref={emulatorRef} />
         </div>
-
         <ControlPanel
           onRomUpload={handleRomUpload}
           onReset={handleReset}
@@ -80,7 +81,7 @@ export default function App() {
         />
       </main>
 
-      <footer className="mt-12 text-center text-gray-500 border-t border-gray-700 pt-6">
+      <footer className="mt-12 text-center text-[#131842]/60 border-t border-[#131842]/20 pt-6">
         <p>G8Emu - CHIP-8 Emulator | Built with Go + WebAssembly</p>
       </footer>
     </div>
