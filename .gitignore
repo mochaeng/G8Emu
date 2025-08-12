@@ -1,3 +1,6 @@
 g8emu/g8emu
 
 ROMs/*
+
+dist/
+release-assets/
