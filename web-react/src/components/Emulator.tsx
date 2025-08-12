@@ -1,3 +1,5 @@
+import { cn } from "@/lib/utils";
+import { Joystick } from "lucide-react";
 import {
   forwardRef,
   useEffect,
@@ -17,16 +19,25 @@ export default forwardRef<HTMLIFrameElement, object>(function Emulator(
     const iframe = iframeRef.current;
     if (!iframe) return;
 
-    // Fix: Correct the focus/blur handlers
-    const handleFocus = () => setIsFocused(true); // When iframe gets focus, set to true
-    const handleBlur = () => setIsFocused(false); // When iframe loses focus, set to false
+    const handleMessage = (event: MessageEvent) => {
+      if (event.source !== iframe.contentWindow) return;
 
-    iframe.addEventListener("focus", handleFocus);
-    iframe.addEventListener("blur", handleBlur);
+      switch (event.data.type) {
+        case "canvas-focus":
+          console.log("Setting focused to true");
+          setIsFocused(true);
+          break;
+        case "canvas-blur":
+          console.log("Setting focused to false");
+          setIsFocused(false);
+          break;
+      }
+    };
+
+    window.addEventListener("message", handleMessage);
 
     return () => {
-      iframe.removeEventListener("focus", handleFocus);
-      iframe.removeEventListener("blur", handleBlur);
+      window.removeEventListener("message", handleMessage);
     };
   }, []);
 
@@ -46,16 +57,25 @@ export default forwardRef<HTMLIFrameElement, object>(function Emulator(
         title="CHIP-8 Emulator"
         className={`w-full h-96 rounded-lg transition-all duration-300 ${
           isFocused
-            ? "ring-4 ring-[#E68369] ring-offset-2 ring-offset-[#ECCEAE] shadow-lg"
-            : "ring-2 ring-[#131842]/20 hover:ring-[#E68369]/50"
+            ? "ring-4 ring-ring ring-offset-2 ring-offset-[#ECCEAE] shadow-lg"
+            : "ring-2 ring-ring/20 hover:ring-ring/50"
         }`}
       />
       <div
-        className={`mt-2 text-center text-sm transition-all duration-300 ${
-          isFocused ? "text-[#E68369] font-medium" : "text-[#131842]/60"
-        }`}
+        className={cn(
+          "mt-2 text-center transition-all duration-300 text-foreground/60",
+          { "text-foreground": isFocused },
+        )}
       >
-        {isFocused ? "🎮 Controls Active" : "Click emulator to enable controls"}
+        <span className="flex justify-center pt-2 text-lg">
+          {isFocused ? (
+            <div className="flex items-center">
+              <Joystick /> Controls are Active
+            </div>
+          ) : (
+            "Click in the emulator screen to enable controls"
+          )}
+        </span>
       </div>
     </div>
   );

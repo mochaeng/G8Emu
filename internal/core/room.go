@@ -12,15 +12,9 @@ func (c8 *Chip8) LoadRomFile(filename string) error {
 	}
 
 	return c8.LoadRomBytes(data)
-	// if len(data) > len(c8.memory)-START_ADDRESS {
-	// 	return fmt.Errorf("ROM too large to fit in memory: %d bytes (max %d)", len(data), len(c8.memory)-START_ADDRESS)
-	// }
-
-	// copy(c8.memory[START_ADDRESS:], data)
 }
 
 func (c8 *Chip8) LoadRomBytes(data []byte) error {
-	println("are we calling LoadRomBytes this?")
 	if len(data) > len(c8.memory)-START_ADDRESS {
 		return fmt.Errorf("ROM too large to fit in memory: %d bytes (max %d)", len(data), len(c8.memory)-START_ADDRESS)
 	}

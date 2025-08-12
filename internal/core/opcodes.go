@@ -7,7 +7,7 @@ func (c8 *Chip8) OpNULL() {}
 
 // Clears the screen
 //
-// [usage]: CLS
+// [instruction]: CLS
 func (c8 *Chip8) Op00E0() {
 	for i := range len(c8.Video) {
 		c8.Video[i] = false
@@ -16,7 +16,7 @@ func (c8 *Chip8) Op00E0() {
 
 // Return from a subroutine
 //
-// [usage]: RET
+// [instruction]: RET
 func (c8 *Chip8) Op00EE() {
 	c8.sp--
 	c8.pc = c8.stack[c8.sp]
@@ -24,14 +24,14 @@ func (c8 *Chip8) Op00EE() {
 
 // Jump to location NNN
 //
-// [usage]: JP addrr
+// [instruction]: JP addrr
 func (c8 *Chip8) Op1NNN() {
 	c8.pc = c8.opcode & 0x0FFF
 }
 
 // Call a subroutine at NNN
 //
-// [usage]: CALL addrr
+// [instruction]: CALL addrr
 func (c8 *Chip8) Op2NNN() {
 	address := c8.opcode & 0x0FFF
 
@@ -43,7 +43,7 @@ func (c8 *Chip8) Op2NNN() {
 // Skips the next instruction if the value in register [Vx]
 // is equal to [NN]
 //
-// [usage]: SE Vx, byte
+// [instruction]: SE Vx, byte
 func (c8 *Chip8) Op3XNN() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	byte := c8.opcode & 0x00FF
@@ -56,7 +56,7 @@ func (c8 *Chip8) Op3XNN() {
 // Skips the next instruction if the value in register [Vx]
 // is different of [NN]
 //
-// [usage]: SNE Vx, byte
+// [instruction]: SNE Vx, byte
 func (c8 *Chip8) Op4XNN() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	byte := c8.opcode & 0x00FF
@@ -68,7 +68,7 @@ func (c8 *Chip8) Op4XNN() {
 
 // Skips the next instruction if the register [Vx] is equal to [Vy]
 //
-// [usage]: SE Vx, Vy
+// [instruction]: SE Vx, Vy
 func (c8 *Chip8) Op5XY0() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	vy := (c8.opcode & 0x00F0) >> 4
@@ -80,7 +80,7 @@ func (c8 *Chip8) Op5XY0() {
 
 // Set register Vx to NN
 //
-// [usage]: LD Vx, byte
+// [instruction]: LD Vx, byte
 func (c8 *Chip8) Op6XNN() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	byte := c8.opcode & 0x00FF
@@ -90,7 +90,7 @@ func (c8 *Chip8) Op6XNN() {
 
 // Set register Vx to [Vx + NN]
 //
-// [usage]: ADD Vx, byte
+// [instruction]: ADD Vx, byte
 func (c8 *Chip8) Op7XNN() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	byte := c8.opcode & 0x00FF
@@ -100,7 +100,7 @@ func (c8 *Chip8) Op7XNN() {
 
 // Copies the value from register Vy to Vx
 //
-// [usage]: LD Vx, Vy
+// [instruction]: LD Vx, Vy
 func (c8 *Chip8) Op8XY0() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	vy := (c8.opcode & 0x00F0) >> 4
@@ -110,7 +110,7 @@ func (c8 *Chip8) Op8XY0() {
 
 // Performs a bitwise OR between register Vx and Vy
 //
-// usage: OR Vx, Vy
+// instruction: OR Vx, Vy
 func (c8 *Chip8) Op8XY1() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	vy := (c8.opcode & 0x00F0) >> 4
@@ -120,7 +120,7 @@ func (c8 *Chip8) Op8XY1() {
 
 // Performs a bitwise AND between register Vx and Vy
 //
-// [usage]: AND Vx, Vy
+// [instruction]: AND Vx, Vy
 func (c8 *Chip8) Op8XY2() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	vy := (c8.opcode & 0x00F0) >> 4
@@ -130,7 +130,7 @@ func (c8 *Chip8) Op8XY2() {
 
 // Performs a bitwise XOR between register Vx and Vy
 //
-// [usage]: XOR Vx, Vy
+// [instruction]: XOR Vx, Vy
 func (c8 *Chip8) Op8XY3() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	vy := (c8.opcode & 0x00F0) >> 4
@@ -140,7 +140,7 @@ func (c8 *Chip8) Op8XY3() {
 
 // Sums the two registers Vx and Vy. Also set VF = carry
 //
-// [usage]: ADD Vx, Vy
+// [instruction]: ADD Vx, Vy
 //
 // [details]: If the sum is greater than 8 bits (>255), register VF
 // is set to 1. Also, only the 8 bits of the result are kept
@@ -163,7 +163,7 @@ func (c8 *Chip8) Op8XY4() {
 
 // Subtracts the two registers Vx and Vy.
 //
-// [usage]: SUB Vx, Vy
+// [instruction]: SUB Vx, Vy
 //
 // [details]: Also set VF = not borrow If Vx > Vy, then VF is
 // set to 1, otherwise 0
@@ -182,7 +182,7 @@ func (c8 *Chip8) Op8XY5() {
 
 // Shifts right a bit from register Vx.
 //
-// [usage]: = SHR Vx
+// [instruction]: = SHR Vx
 //
 // [details]: If the least-significant
 // bit of Vx is 1, then VF is set to 1, otherwise 0. Then Vx is
@@ -195,7 +195,7 @@ func (c8 *Chip8) Op8XY6() {
 
 // Set Vx = Vy - Vx, set VF = not borrow.
 //
-// [usage]: SUBN Vx, Vy
+// [instruction]: SUBN Vx, Vy
 //
 // [details]: If Vy > Vx, then VF is set
 // to 1, otherwise 0.
@@ -214,7 +214,7 @@ func (c8 *Chip8) Op8XY7() {
 
 // Set Vx = Vx SHL 1
 //
-// [usage]: SHL Vx
+// [instruction]: SHL Vx
 //
 // [details]: If the most significant bit of Vx is 1, then VF
 // is set to 1, otherwise to 0. Then Vx is multiplied by 2
@@ -227,7 +227,7 @@ func (c8 *Chip8) Op8XYE() {
 
 // Skip the next instruction if Vx != Vy
 //
-// [usage]: SNE Vx, Vy
+// [instruction]: SNE Vx, Vy
 func (c8 *Chip8) Op9XY0() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	vy := (c8.opcode & 0x00F0) >> 4
@@ -239,7 +239,7 @@ func (c8 *Chip8) Op9XY0() {
 
 // Set I = NNN. The value of register I is set to NNN
 //
-// [usage]: LD I, addr
+// [instruction]: LD I, addr
 func (c8 *Chip8) OpANNN() {
 	addr := c8.opcode & 0x0FFF
 	c8.index = addr
@@ -247,7 +247,7 @@ func (c8 *Chip8) OpANNN() {
 
 // Jump to location NNN + V0. The PC is set to NNN + V0
 //
-// [usage]: JP V0, addr
+// [instruction]: JP V0, addr
 func (c8 *Chip8) OpBNNN() {
 	addr := c8.opcode & 0x0FFF
 	c8.pc = uint16(c8.registers[0]) + addr
@@ -255,7 +255,7 @@ func (c8 *Chip8) OpBNNN() {
 
 // Set Vx = random byte AND NN. Generates a random number from 0 to 255
 //
-// [usage]: RND Vx, byte
+// [instruction]: RND Vx, byte
 func (c8 *Chip8) OpCXNN() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	byte := c8.opcode & 0x00FF
@@ -263,7 +263,9 @@ func (c8 *Chip8) OpCXNN() {
 	c8.registers[vx] = c8.randByte() & uint8(byte)
 }
 
-// Fixed OpDXYN - Display n-byte sprite starting at memory location I at (Vx, Vy)
+// Display n-byte sprite starting at memory location I at (Vx, Vy)
+//
+// [instruction]: DRW Vx, Vy, nibble
 func (c8 *Chip8) OpDXYN() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	vy := (c8.opcode & 0x00F0) >> 4
@@ -273,44 +275,35 @@ func (c8 *Chip8) OpDXYN() {
 	height := c8.opcode & 0x000F
 	c8.registers[0xF] = 0
 
-	for row := uint16(0); row < height; row++ {
-		spriteRow := c8.memory[c8.index+row]
+	for row := range height {
+		spriteRowData := c8.memory[c8.index+row]
 
-		// Check if we're going off screen vertically
-		yCoord := y + uint8(row)
-		if yCoord >= constants.VIDEO_HEIGHT {
-			break // Clip vertically - don't draw rows that go off screen
+		screenY := y + uint8(row)
+		if screenY >= constants.VIDEO_HEIGHT {
+			break
 		}
 
-		for col := uint8(0); col < 8; col++ {
-			// Check if we're going off screen horizontally
-			xCoord := x + col
-			if xCoord >= constants.VIDEO_WIDTH {
-				break // Clip horizontally - don't draw pixels that go off screen
+		for col := range uint8(8) {
+			screenX := x + col
+			if screenX >= constants.VIDEO_WIDTH {
+				break
 			}
 
-			// Get the current bit from the sprite row
-			spritePixel := (spriteRow & (0x80 >> col)) != 0
+			isSpritePixelOn := (spriteRowData & (0x80 >> col)) != 0
+			pixelPosition := uint16(screenY)*constants.VIDEO_WIDTH + uint16(screenX)
 
-			// Calculate pixel index
-			pixelIndex := uint16(yCoord)*constants.VIDEO_WIDTH + uint16(xCoord)
-
-			// Safety check (shouldn't be needed with proper clipping, but good practice)
-			if pixelIndex >= constants.VIDEO_WIDTH*constants.VIDEO_HEIGHT {
+			if pixelPosition >= constants.VIDEO_WIDTH*constants.VIDEO_HEIGHT {
 				continue
 			}
 
-			// Get current screen state
-			currentPixel := c8.Video[pixelIndex]
+			isScreenPixelOn := c8.Video[pixelPosition]
 
-			// Check for collision (both pixels are on)
-			if spritePixel && currentPixel {
+			if isSpritePixelOn && isScreenPixelOn {
 				c8.registers[0xF] = 1
 			}
 
-			// XOR the sprite pixel with screen pixel
-			if spritePixel {
-				c8.Video[pixelIndex] = !currentPixel
+			if isSpritePixelOn {
+				c8.Video[pixelPosition] = !isScreenPixelOn
 			}
 		}
 	}
@@ -318,7 +311,7 @@ func (c8 *Chip8) OpDXYN() {
 
 // Skip next instruction if key with the value of Vx is pressed
 //
-// [usage]: SKP Vx
+// [instruction]: SKP Vx
 func (c8 *Chip8) OpEX9E() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	key := c8.registers[vx]
@@ -330,7 +323,7 @@ func (c8 *Chip8) OpEX9E() {
 
 // Skip next instruction if key with the value of Vx is not pressed
 //
-// [usage]: SKNP Vx
+// [instruction]: SKNP Vx
 func (c8 *Chip8) OpEXA1() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	key := c8.registers[vx]
@@ -342,7 +335,7 @@ func (c8 *Chip8) OpEXA1() {
 
 // Set Vx = delay timer value
 //
-// [usage]: LD Vx, DT
+// [instruction]: LD Vx, DT
 func (c8 *Chip8) OpFX07() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	c8.registers[vx] = c8.DelayTimer
@@ -350,7 +343,7 @@ func (c8 *Chip8) OpFX07() {
 
 // Wait for a key press, store the value of the key in Vx
 //
-// [usage]: LD Vx, K
+// [instruction]: LD Vx, K
 func (c8 *Chip8) OpFX0A() {
 	vx := (c8.opcode & 0x0F00) >> 8
 
@@ -393,7 +386,7 @@ func (c8 *Chip8) OpFX0A() {
 
 // Set delay timer = Vx.
 //
-// [usage]: LD DT, Vx
+// [instruction]: LD DT, Vx
 func (c8 *Chip8) OpFX15() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	c8.DelayTimer = c8.registers[vx]
@@ -401,7 +394,7 @@ func (c8 *Chip8) OpFX15() {
 
 // Set sound timer = Vx.
 //
-// [usage]: LD ST, Vx
+// [instruction]: LD ST, Vx
 func (c8 *Chip8) OpFX18() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	c8.SoundTimer = c8.registers[vx]
@@ -409,7 +402,7 @@ func (c8 *Chip8) OpFX18() {
 
 // Set I = I + Vx.
 //
-// [usage]:  ADD I, Vx
+// [instruction]:  ADD I, Vx
 func (c8 *Chip8) OpFX1E() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	c8.index += uint16(c8.registers[vx])
@@ -417,7 +410,7 @@ func (c8 *Chip8) OpFX1E() {
 
 // Set I = location of sprite for digit Vx
 //
-// [usage]: LD F, Vx
+// [instruction]: LD F, Vx
 func (c8 *Chip8) OpFX29() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	digit := c8.registers[vx]
@@ -427,7 +420,7 @@ func (c8 *Chip8) OpFX29() {
 
 // Store BCD representation of Vx in memory locations I, I+1, and I+2.
 //
-// [usage]: LD B, Vx
+// [instruction]: LD B, Vx
 func (c8 *Chip8) OpFX33() {
 	vx := (c8.opcode & 0x0F00) >> 8
 	value := c8.registers[vx]
@@ -443,7 +436,7 @@ func (c8 *Chip8) OpFX33() {
 
 // Store registers V0 through Vx in memory starting at location I.
 //
-// [usage]: LD [I], Vx
+// [instruction]: LD [I], Vx
 func (c8 *Chip8) OpFX55() {
 	vx := (c8.opcode & 0x0F00) >> 8
 
@@ -454,7 +447,7 @@ func (c8 *Chip8) OpFX55() {
 
 // Read registers V0 through Vx from memory starting at location I.
 //
-// [usage]: LD Vx, [I]
+// [instruction]: LD Vx, [I]
 func (c8 *Chip8) OpFX65() {
 	vx := (c8.opcode & 0x0F00) >> 8
 

@@ -17,7 +17,6 @@ func main() {
 	engine := emulator.NewGame(platform, chip8, frequency)
 
 	loadRom := func(this js.Value, args []js.Value) any {
-		println("what about this one?")
 		if len(args) == 0 || args[0].IsNull() {
 			return js.ValueOf("No ROM data provided")
 		}
@@ -25,6 +24,8 @@ func main() {
 		dataLength := args[0].Get("length").Int()
 		romData := make([]byte, dataLength)
 		js.CopyBytesToGo(romData, args[0])
+
+		engine.Reset()
 
 		if err := chip8.LoadRomBytes(romData); err != nil {
 			js.Global().Call("alert", "ROM load error: "+err.Error())
@@ -35,7 +36,6 @@ func main() {
 	}
 
 	resetEmulator := func(this js.Value, args []js.Value) any {
-		println("is this being called?")
 		engine.Reset()
 		return nil
 	}
