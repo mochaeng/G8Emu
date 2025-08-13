@@ -53,7 +53,7 @@ export default forwardRef<HTMLIFrameElement, object>(function Emulator(
           }
         }}
         id="emulator"
-        src="/emulator.html"
+        src={`${import.meta.env.BASE_URL}emulator.html`}
         title="CHIP-8 Emulator"
         className={`w-full h-96 rounded-lg transition-all duration-300 ${
           isFocused
