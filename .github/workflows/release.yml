@@ -10,15 +10,16 @@ permissions:
 
 jobs:
     build:
-        name: Build for ${{ matrix.os }}
+        name: Build for ${{ matrix.label }}
         runs-on: ${{ matrix.os }}
         strategy:
             matrix:
                 include:
-                    - os: ubuntu-latest
+                    - label: linux-amd64
+                      os: ubuntu-latest
                       goos: linux
                       goarch: amd64
-                      output: g8emu
+                      output: g8emu-linux-amd64
                       deps: |
                           sudo apt-get update
                           sudo apt-get install -y \
@@ -30,14 +31,16 @@ jobs:
                             libgl1-mesa-dev \
                             libasound2-dev \
                             libxxf86vm-dev
-                    - os: windows-latest
+                    - label: windows-amd64
+                      os: windows-latest
                       goos: windows
                       goarch: amd64
-                      output: g8emu.exe
-                    - os: macos-latest
+                      output: g8emu-windows-amd64.exe
+                    - label: macos-amd64
+                      os: macos-latest
                       goos: darwin
                       goarch: amd64
-                      output: g8emu
+                      output: g8emu-macos-amd64
         steps:
             - uses: actions/checkout@v4
 
@@ -55,8 +58,7 @@ jobs:
                   GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} \
                   go build -o ${{ matrix.output }} cmd/desktop/main.go
 
-            - name: Upload artifact
-              uses: actions/upload-artifact@v4
+            - uses: actions/upload-artifact@v4
               with:
                   name: ${{ matrix.output }}
                   path: ${{ matrix.output }}
@@ -65,13 +67,11 @@ jobs:
         runs-on: ubuntu-latest
         needs: build
         steps:
-            - name: Download all build artifacts
-              uses: actions/download-artifact@v4
+            - uses: actions/download-artifact@v4
               with:
                   path: ./dist
 
-            - name: Create GitHub Release
-              uses: softprops/action-gh-release@v1
+            - uses: softprops/action-gh-release@v1
               with:
                   files: dist/**
               env:
