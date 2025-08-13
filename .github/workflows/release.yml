@@ -34,18 +34,23 @@ jobs:
 
             - name: Build Linux binary
               run: |
-                  GOOS=linux GOARCH=amd64 go build -o g8emu-linux-amd64 cmd/desktop/main.go
+                  GOOS=linux GOARCH=amd64 go build -o g8emu cmd/desktop/main.go
+                  chmod +x g8emu
+                  zip g8emu-linux-amd64.zip g8emu
+                  rm g8emu
 
             - name: Build Windows binary (cross-compile on Ubuntu)
               run: |
-                  CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o g8emu-windows-amd64.exe cmd/desktop/main.go
+                  CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o g8emu.exe cmd/desktop/main.go
+                  zip g8emu-windows-amd64.zip g8emu.exe
+                  rm g8emu.exe
 
             - uses: actions/upload-artifact@v4
               with:
                   name: linux-windows
                   path: |
-                      g8emu-linux-amd64
-                      g8emu-windows-amd64.exe
+                      g8emu-linux-amd64.zip
+                      g8emu-windows-amd64.zip
 
     build-macos:
         runs-on: macos-latest
@@ -59,13 +64,15 @@ jobs:
 
             - name: Build macOS binary (arm64)
               run: |
-                  go build -o g8emu-macos-arm64 cmd/desktop/main.go
-                  # If you really need Intel macs, you'll need a separate Intel runner or a cross toolchain with cgo, which GitHub-hosted doesn't provide.
+                  GOOS=darwin GOARCH=arm64 go build -o g8emu cmd/desktop/main.go
+                  chmod +x g8emu
+                  zip g8emu-macos-arm64.zip g8emu
+                  rm g8emu
 
             - uses: actions/upload-artifact@v4
               with:
                   name: macos
-                  path: g8emu-macos-arm64
+                  path: g8emu-macos-arm64.zip
 
     release:
         runs-on: ubuntu-latest
@@ -78,8 +85,8 @@ jobs:
             - uses: softprops/action-gh-release@v1
               with:
                   files: |
-                      dist/linux-windows/g8emu-linux-amd64
-                      dist/linux-windows/g8emu-windows-amd64.exe
-                      dist/macos/g8emu-macos-arm64
+                      dist/linux-windows/g8emu-linux-amd64.zip
+                      dist/linux-windows/g8emu-windows-amd64.zip
+                      dist/macos/g8emu-macos-arm64.zip
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
